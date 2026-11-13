@@ -8,6 +8,7 @@ import sqlite3
 import threading
 import uuid
 import datetime as dt
+from urllib.parse import quote, unquote
 
 SCHEMA = [
     "CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)",
@@ -30,6 +31,24 @@ DEFAULT_COMPONENTS = [
 ]
 
 
+def normalize_url(url):
+    """Tidy a pasted Postgres URL: trim spaces/quotes, accept postgres://, and percent-encode the password
+    (a raw @ : / # ? in it would otherwise break the URL). Already-encoded passwords are left as they are."""
+    url = (url or "").strip().strip("\"'")
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+    if not url.startswith("postgresql://"):
+        return url
+    rest = url[len("postgresql://"):]
+    if "@" not in rest:
+        return url
+    userinfo, hostpart = rest.rsplit("@", 1)
+    if ":" not in userinfo:
+        return url
+    user, pw = userinfo.split(":", 1)
+    return f"postgresql://{user}:{quote(unquote(pw), safe='')}@{hostpart}"
+
+
 def _id():
     return uuid.uuid4().hex
 
@@ -40,7 +59,7 @@ def _now():
 
 class Store:
     def __init__(self, url="sqlite:///study.db"):
-        self.url = url
+        self.url = normalize_url(url) if not url.startswith("sqlite") else url
         self.pg = not url.startswith("sqlite")
         self.lock = threading.RLock()
         self.conn = None

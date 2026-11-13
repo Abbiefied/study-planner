@@ -74,7 +74,20 @@ def login_gate():
 
 
 ME = login_gate()
-store = get_store()
+try:
+    store = get_store()
+except Exception as exc:  # Streamlit hides uncaught error text, so show a safe version
+    msg = " ".join(str(exc).split())
+    st.error(f"Could not connect to the database ({type(exc).__name__}): {msg[:400]}")
+    low = msg.lower()
+    if "unreachable" in low or "ipv6" in low or "could not translate host" in low or "name or service" in low:
+        st.info("This looks like a network/host problem. With Supabase, use the **Session pooler** connection string "
+                "(host like aws-0-<region>.pooler.supabase.com, user `postgres.<project-ref>`), not the direct "
+                "`db.<ref>.supabase.co` one: Streamlit Cloud has no IPv6.")
+    elif "password" in low or "authentication" in low or "tenant or user not found" in low:
+        st.info("This looks like a login problem. Check the database password and, for the pooler, that the user is "
+                "`postgres.<project-ref>` (with the dot and your project ref).")
+    st.stop()
 PEOPLE = list(USERS)
 
 # ------------------------------------------------------------------ sidebar / who am I viewing

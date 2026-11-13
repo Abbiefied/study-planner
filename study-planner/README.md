@@ -70,6 +70,14 @@ git branch -M main && git push -u origin main
    The tool warns when a course's weights don't total 100%.
 3. Plan the day in **Daily plan**, log time in **Study log**, check **Weekly report** every Sunday.
 
+## Troubleshooting the database connection
+The app now shows the real error (without your password) instead of Streamlit's redacted one.
+- *"Network is unreachable"* or an IPv6 address in the message: use Supabase's **Session pooler** string
+  (`...pooler.supabase.com:5432`, user `postgres.<project-ref>`), not the direct `db.<ref>.supabase.co` one.
+- *"password authentication failed"* / *"Tenant or user not found"*: wrong password, a leftover `[YOUR-PASSWORD]`
+  placeholder (remove the square brackets), or a pooler user missing the `.<project-ref>` suffix.
+- Special characters in the password are fine; the app percent-encodes them automatically.
+
 ## Run locally
 ```bash
 python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate

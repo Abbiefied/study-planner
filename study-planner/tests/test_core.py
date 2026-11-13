@@ -1,7 +1,7 @@
 import os, sys, tempfile, unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import calc
-from store import Store
+from store import Store, normalize_url
 
 
 class CalcTests(unittest.TestCase):
@@ -30,6 +30,16 @@ class CalcTests(unittest.TestCase):
         s = calc.course_stats([{"id": "a", "weight": 100}], {"a": (70.0, None)})
         self.assertIsNone(s["need"])
         self.assertAlmostEqual(s["projected"], 70.0)
+
+
+class UrlTests(unittest.TestCase):
+    def test_normalize(self):
+        self.assertEqual(normalize_url(' "postgres://u:p@ss/w:rd@h.example.com:5432/postgres" '),
+                         "postgresql://u:p%40ss%2Fw%3Ard@h.example.com:5432/postgres")
+        enc = "postgresql://u:p%40ss@h.example.com:5432/postgres"
+        self.assertEqual(normalize_url(enc), enc)          # already encoded: unchanged
+        self.assertEqual(normalize_url("postgresql://h/db"), "postgresql://h/db")
+        self.assertEqual(normalize_url("sqlite:///x.db"), "sqlite:///x.db")
 
 
 class StoreTests(unittest.TestCase):
